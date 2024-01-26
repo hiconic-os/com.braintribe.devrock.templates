@@ -19,11 +19,9 @@ You should have received a copy of the GNU Lesser General Public License along w
         <V.com.braintribe.devrock.templates>[2.0,2.1)</V.com.braintribe.devrock.templates>
         <V.tribefire.cortex>[3.0,3.1)</V.tribefire.cortex>
         <V.com.braintribe.gm>[2.0,2.1)</V.com.braintribe.gm>
-        <V.com.braintribe.gm.testing>[2.0,2.1)</V.com.braintribe.gm.testing>
         <V.com.braintribe.devrock>[2.0,2.1)</V.com.braintribe.devrock>
         <V.com.braintribe.common>[2.0,2.1)</V.com.braintribe.common>
         <V.org.freemarker>[2.3,2.4)</V.org.freemarker>
-        <V.com.braintribe.testing>[2.0,2.1)</V.com.braintribe.testing>
         <V.tribefire.extension.setup>[2.1,2.2)</V.tribefire.extension.setup>
         <V.tribefire.extension.scripting>[1.0,1.1)</V.tribefire.extension.scripting>
     </properties>
