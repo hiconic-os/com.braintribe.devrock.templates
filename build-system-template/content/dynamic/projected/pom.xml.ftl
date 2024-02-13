@@ -18,7 +18,7 @@
 	<groupId>${request.groupId}</groupId>
 </#if>
 	<artifactId>${request.artifactId}</artifactId>
-	<version>${version.getMajor()}.${version.getMinor()}.<#if version.getRevision()??>${version.getRevision()}<#if version.getQualifier()??>-${version.getQualifier()}</#if><#else>1-pc</#if></version>
+	<version>${version.getMajor()}.${version.getMinor()}.<#if version.getRevision()??>${version.getRevision()}<#if version.getQualifier()??>-${version.getQualifier()}</#if><#else>1</#if></version>
 <#if request.packaging??>
 	<packaging>${request.packaging}</packaging>
 </#if>
