@@ -19,6 +19,6 @@ if ('eclipse'.equals(request.ide)) {
 
 def sourceControlConfigRequest = CreateSourceControlConfig.T.create();
 support.mapFromTo(request, sourceControlConfigRequest);
-sourceControlConfigRequest.ignoredFiles = ['/' + projectMetadataRequest.outputDirectory, "class-gen"];
+sourceControlConfigRequest.ignoredFiles = ['/' + projectMetadataRequest.outputDirectory];
 
 [buildSystemConfigRequest, projectMetadataRequest, sourceControlConfigRequest]

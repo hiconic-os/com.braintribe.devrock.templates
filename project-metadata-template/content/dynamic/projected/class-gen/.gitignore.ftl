@@ -2,3 +2,4 @@
 	${template.ignore()}
 </#if>
 *
+!.git*
