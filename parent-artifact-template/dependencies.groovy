@@ -4,9 +4,11 @@ import com.braintribe.devrock.templates.model.artifact.CreateSourceControlConfig
 import com.braintribe.devrock.templates.model.Property;
 
 def javaVersion = '21';
+
 def buildSystemConfigRequest = CreateBuildSystemConfig.T.create();
 support.mapFromTo(request, buildSystemConfigRequest);
 buildSystemConfigRequest.artifactType = 'parent';
+
 def props = [];
 if ('bt-ant'.equals(request.buildSystem)) {
 	buildSystemConfigRequest.packaging = 'pom';
@@ -27,10 +29,12 @@ if ('bt-ant'.equals(request.buildSystem)) {
 	javaVersionProp.value = javaVersion;
 	props += [mavenCompilerTargetProp, mavenCompilerSourceProp, javaVersionProp];
 }
+
 def versionProp = Property.T.create();
 versionProp.name = 'V.' + request.groupId;
 versionProp.value = '[1.0,1.1)';
 props += [versionProp];
+
 buildSystemConfigRequest.properties = support.distinctProperties(props + buildSystemConfigRequest.properties);
 buildSystemConfigRequest.managedDependencies = request.dependencies;
 buildSystemConfigRequest.dependencies = [];

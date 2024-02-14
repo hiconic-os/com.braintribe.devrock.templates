@@ -11,7 +11,7 @@ support.mapFromTo(request, groupBuildScriptRequest);
 groupBuildScriptRequest.builtArtifactIds = ['parent'];
 
 def sourceControlConfigRequest = CreateSourceControlConfig.T.create();
-support.mapFromTo(request, sourceControlConfigRequest, ["buildSystem"]);
-sourceControlConfigRequest.ignoredFiles = ['**/.DS_Store', '**/.DS_Store?', '**/.Spotlight-V100', '**/.Trashes', '**/ehthumbs.db', '**/Thumbs.db'];
+support.mapFromTo(request, sourceControlConfigRequest, /*excluded property*/ ["buildSystem"]);
+sourceControlConfigRequest.ignoredFiles = ['**/.DS_Store', '**/.DS_Store?', '**/.Spotlight-V100', '**/.Trashes', '**/ehthumbs.db', '**/Thumbs.db', '.gradle'];
 
-[parentRequest, groupBuildScriptRequest, sourceControlConfigRequest]
+return [parentRequest, groupBuildScriptRequest, sourceControlConfigRequest]

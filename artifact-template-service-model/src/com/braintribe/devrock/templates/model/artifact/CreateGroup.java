@@ -39,7 +39,7 @@ public interface CreateGroup extends ArtifactTemplateRequest {
 	
 	@Description("The build system used in the group. Currently available options are 'bt-ant' and 'maven'.")
 	@Alias("bs")
-	@Initializer("'bt-ant'")
+	@Initializer("'dr'")
 	String getBuildSystem();
 	void setBuildSystem(String buildSystem);
 	
