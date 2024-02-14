@@ -3,7 +3,7 @@ import com.braintribe.devrock.templates.model.artifact.CreateProjectMetadata;
 import com.braintribe.devrock.templates.model.artifact.CreateSourceControlConfig;
 import com.braintribe.devrock.templates.model.Property;
 
-def javaVersion = '1.17';
+def javaVersion = '21';
 def buildSystemConfigRequest = CreateBuildSystemConfig.T.create();
 support.mapFromTo(request, buildSystemConfigRequest);
 buildSystemConfigRequest.artifactType = 'parent';
