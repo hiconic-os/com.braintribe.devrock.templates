@@ -41,18 +41,15 @@ import com.braintribe.utils.lcd.NullSafe;
 import com.braintribe.utils.template.Template;
 
 /**
- * 
  * Provides the artifact template with a set of utility functions.
- * 
  */
 public class TemplateSupport {
 
-	private ModeledConfiguration modeledConfiguration;
+	private final ModeledConfiguration modeledConfiguration;
 
 	private static final String DEFAULT_ARTIFACT_VERSION = "1.0";
 
 	public TemplateSupport(ModeledConfiguration modeledConfiguration) {
-		super();
 		this.modeledConfiguration = modeledConfiguration;
 	}
 

@@ -109,7 +109,6 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 	}
 
 	@Required
-	@Configurable
 	public void setModeledConfiguration(ModeledConfiguration config) {
 		this.modeledConfiguration = config;
 	}
@@ -295,7 +294,11 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			GroovyScript dependenciesScript = GroovyScript.T.create();
 			Resource scriptResource = Resource.createTransient(() -> new FileInputStream(dependenciesScriptPath.toFile()));
 			dependenciesScript.setSource(scriptResource);
-			Map<String, Object> dataModel = asMap("request", request, "support", new TemplateSupport(modeledConfiguration));
+			Map<String, Object> dataModel = asMap( //
+					"request", request, //
+					"requestContext", requestContext, //
+					"support", new TemplateSupport(modeledConfiguration) //
+					);
 
 			try {
 				Maybe<Object> evaluateDependencies = groovyEngine.evaluate(dependenciesScript, dataModel);
