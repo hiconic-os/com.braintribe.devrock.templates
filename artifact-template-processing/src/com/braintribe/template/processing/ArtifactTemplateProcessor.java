@@ -12,13 +12,12 @@
 package com.braintribe.template.processing;
 
 import static com.braintribe.console.ConsoleOutputs.println;
-import static com.braintribe.console.ConsoleOutputs.white;
 import static com.braintribe.console.output.ConsoleOutputFiles.outputProjectionDirectoryTree;
 import static com.braintribe.template.processing.helper.ConsoleOutputHelper.outTemplateResolvingResult;
 import static com.braintribe.template.processing.helper.ConsoleOutputHelper.templateNameOutput;
 import static com.braintribe.template.processing.helper.FileHelper.collectOverwritenRelativePaths;
 import static com.braintribe.template.processing.helper.FileHelper.copyDir;
-import static com.braintribe.template.processing.helper.FileHelper.createTempPath;
+import static com.braintribe.template.processing.helper.FileHelper.createTempDir;
 import static com.braintribe.template.processing.helper.FileHelper.deleteDir;
 import static com.braintribe.template.processing.helper.FileHelper.ensureDirExists;
 import static com.braintribe.template.processing.helper.FileHelper.unzipToTempDir;
@@ -85,7 +84,8 @@ import tribefire.extension.scripting.groovy.GroovyEngine;
  * Based on the request, the artifact template is resolved by the use of the {@link ArtifactResolver resolver} and later on projected by the use of
  * the {@link ArtifactTemplateProjector projector}.
  */
-public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<ArtifactTemplateRequest, ArtifactTemplateResponse>, ArtifactTemplateConsts {
+public class ArtifactTemplateProcessor
+		implements ReasonedServiceProcessor<ArtifactTemplateRequest, ArtifactTemplateResponse>, ArtifactTemplateConsts {
 
 	private ArtifactTemplateRequestProjector requestProjector;
 	private ArtifactTemplateProjector templateProjector;
@@ -118,7 +118,6 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 		this.useCaseRepositoryConfigurationLocation = useCaseRepositoryConfigurationLocation;
 	}
 
-
 	@Override
 	public Maybe<ArtifactTemplateResponse> processReasoned(ServiceRequestContext requestContext, ArtifactTemplateRequest request) {
 		Optional<DevEnvironment> devEnvironment = requestContext.findAttribute(DevEnvironment.class);
@@ -130,12 +129,12 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 		}
 	}
 
+	// Why is this here???
 	public class TemplateProcessorWireModule implements WireTerminalModule<ArtifactDataResolverContract> {
 
 		private final File devEnvFolder;
 
 		public TemplateProcessorWireModule(File devEnvFolder) {
-			super();
 			this.devEnvFolder = devEnvFolder;
 		}
 
@@ -152,20 +151,23 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			WireTerminalModule.super.configureContext(contextBuilder);
 			contextBuilder.bindContract(VirtualEnvironmentContract.class, () -> virtualEnvironment);
 			contextBuilder.bindContract(DevelopmentEnvironmentContract.class, () -> devEnvFolder);
-			
+
 			RepositoryConfigurationLocaterBuilder repositoryConfigurationLocatorBuilder = RepositoryConfigurationLocators.build() //
-				.addDevEnvLocation(UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_ARTIFACTS).push("repository-configuration-devrock.yaml")); 
-			
+					.addDevEnvLocation(
+							UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_ARTIFACTS).push("repository-configuration-devrock.yaml"));
+
 			if (useCaseRepositoryConfigurationLocation != null)
 				repositoryConfigurationLocatorBuilder.addLocation(useCaseRepositoryConfigurationLocation);
-			
+
 			repositoryConfigurationLocatorBuilder //
-				.addDevEnvLocation(UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_ARTIFACTS).push(RepositoryConfigurationLocators.FILENAME_REPOSITORY_CONFIGURATION)) //
-				.addLocationEnvVariable(RepositoryConfigurationLocators.ENV_DEVROCK_REPOSITORY_CONFIGURATION) //
-				.addUserDirLocation(UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_DEVROCK).push(RepositoryConfigurationLocators.FILENAME_REPOSITORY_CONFIGURATION));
-				
+					.addDevEnvLocation(UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_ARTIFACTS)
+							.push(RepositoryConfigurationLocators.FILENAME_REPOSITORY_CONFIGURATION)) //
+					.addLocationEnvVariable(RepositoryConfigurationLocators.ENV_DEVROCK_REPOSITORY_CONFIGURATION) //
+					.addUserDirLocation(UniversalPath.start(RepositoryConfigurationLocators.FOLDERNAME_DEVROCK)
+							.push(RepositoryConfigurationLocators.FILENAME_REPOSITORY_CONFIGURATION));
+
 			RepositoryConfigurationLocator repositoryConfigurationLocator = repositoryConfigurationLocatorBuilder.done();
-			
+
 			contextBuilder.bindContract(RepositoryConfigurationLocatorContract.class, () -> repositoryConfigurationLocator);
 		}
 
@@ -179,37 +181,38 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 		private final DependencyResolver dependencyResolver;
 		private final ArtifactPartResolver partResolver;
 
+		private final boolean verboseOutput;
+
+		private final Path projectionPath;
+		private final Path installationPath;
+
 		private final GroovyEngine groovyEngine = new GroovyEngine();
 
 		public ArtifactTemplateProcess(ServiceRequestContext requestContext, ArtifactTemplateRequest request,
 				ArtifactDataResolverContract adrContract) {
 			this.requestContext = requestContext;
 			this.request = request;
+			this.verboseOutput = requestContext.getAspect(OutputConfigAspect.class, OutputConfig.empty).verbose();
+
 			this.dependencyResolver = adrContract.dependencyResolver();
 			this.partResolver = adrContract.artifactResolver();
+
+			this.projectionPath = createTempDir("template-projection-" + UUID.randomUUID()).toPath();
+			this.installationPath = Paths.get(request.getInstallationPath());
 		}
 
 		public Maybe<ArtifactTemplateResponse> run() {
-			boolean verboseOutput = requestContext.getAspect(OutputConfigAspect.class, OutputConfig.empty).verbose();
-
-			Path installationPath = Paths.get(request.getInstallationPath());
 			ensureDirExists(installationPath);
-			Path projectionPath = createTempPath("template-projection-" + UUID.randomUUID());
-
 			if (verboseOutput)
-				println(white("Projecting artifact template to the installation directory: " + installationPath));
+				println("Projecting artifact template to the installation directory: " + installationPath);
 
-			try {
-				processTemplateRequest(request, projectionPath, verboseOutput);
-			} catch (RuntimeException e) {
-				throw Exceptions.unchecked(e, "Failed to project the requested artifact template");
-			}
+			processTemplateRequest();
 
-			println(white("Installing:"));
+			println("Installing:");
 			outputProjectionDirectoryTree(projectionPath);
 
 			if (!request.getOverwrite()) {
-				AlreadyExists error = deleteProjectionIfInstallationExists(installationPath, projectionPath);
+				AlreadyExists error = deleteProjectionIfInstallationExists();
 				if (error != null)
 					return error.asMaybe();
 			}
@@ -220,44 +223,50 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			return Maybe.complete(ArtifactTemplateResponse.T.create());
 		}
 
-		private void processTemplateRequest(ArtifactTemplateRequest request, Path installationPath, boolean verboseOutput) {
-			if (verboseOutput) {
-				println(white("Projecting '" + request.entityType().getTypeSignature() + "' property values"));
+		private void processTemplateRequest() {
+			try {
+				tryProcessTemplateRequest(request);
+			} catch (RuntimeException e) {
+				throw Exceptions.unchecked(e, "Failed to project the requested artifact template");
 			}
+		}
+
+		private void tryProcessTemplateRequest(ArtifactTemplateRequest request) {
+			if (verboseOutput)
+				println("Projecting '" + request.entityType().getTypeSignature() + "' property values");
+
 			requestProjector.project(request);
 
-			Path templateInstallationPath = installationPath.resolve(request.getDirectoryName() != null ? request.getDirectoryName() : "");
-			ensureDirExists(templateInstallationPath);
+			Path templateProjectionPath = projectionPath.resolve(request.getDirectoryName() != null ? request.getDirectoryName() : "");
+			ensureDirExists(templateProjectionPath);
 
 			if (verboseOutput) {
-				println(white("Resolving artifact template:"));
+				println("Resolving artifact template:");
 				println(templateNameOutput(request.template(), 1));
 			}
 			// resolve template zip, ignore dependencies
 			ArchiveZip archiveZip = resolveTemplate(request);
 			if (verboseOutput) {
-				println(white("Found:"));
+				println("Found:");
 				outTemplateResolvingResult(archiveZip.artifact);
 			}
 
 			if (verboseOutput) {
-				println(white("Unzipping artifact template:"));
+				println("Unzipping artifact template:");
 				println(templateNameOutput(archiveZip.artifact, 1));
 			}
+
 			Path templatePath = unzipToTempDir(archiveZip.data.getResource(), "template-" + UUID.randomUUID());
 
 			List<ArtifactTemplateRequest> templateDependencies = getTemplateDependencies(templatePath, request);
-
 			for (ArtifactTemplateRequest td : templateDependencies) {
-				if (!td.template().equals(request.template())) { // avoids potential infinite recursion
-					processTemplateRequest(td, installationPath, verboseOutput);
-				}
+				tryProcessTemplateRequest(td);
 			}
 
-			println(white("Projecting artifact template:"));
+			println("Projecting artifact template:");
 			println(templateNameOutput(archiveZip.artifact, 1));
 
-			templateProjector.project(request, templatePath, templateInstallationPath);
+			templateProjector.project(request, templatePath, templateProjectionPath);
 			deleteDir(templatePath);
 		}
 
@@ -290,7 +299,7 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			Path dependenciesScriptPath = templatePath.resolve(DEPENDENCIES_SCRIPT);
 			if (!dependenciesScriptPath.toFile().exists())
 				return Collections.emptyList();
-			
+
 			GroovyScript dependenciesScript = GroovyScript.T.create();
 			Resource scriptResource = Resource.createTransient(() -> new FileInputStream(dependenciesScriptPath.toFile()));
 			dependenciesScript.setSource(scriptResource);
@@ -298,7 +307,7 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 					"request", request, //
 					"requestContext", requestContext, //
 					"support", new TemplateSupport(modeledConfiguration) //
-					);
+			);
 
 			try {
 				Maybe<Object> evaluateDependencies = groovyEngine.evaluate(dependenciesScript, dataModel);
@@ -308,7 +317,7 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			}
 		}
 
-		private AlreadyExists deleteProjectionIfInstallationExists(Path installationPath, Path projectionPath) {
+		private AlreadyExists deleteProjectionIfInstallationExists() {
 			List<Path> overwrittenFilePaths = collectOverwritenRelativePaths(projectionPath, installationPath);
 			if (overwrittenFilePaths.isEmpty())
 				return null;
@@ -329,7 +338,5 @@ public class ArtifactTemplateProcessor implements ReasonedServiceProcessor<Artif
 			this.data = data;
 		}
 	}
-
-
 
 }

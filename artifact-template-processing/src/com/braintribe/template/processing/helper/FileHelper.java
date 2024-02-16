@@ -35,10 +35,6 @@ public final class FileHelper {
 		// noop
 	}
 
-	public static Path createTempPath(String dirPrefix) {
-		return createTempDir(dirPrefix).toPath();
-	}
-
 	/**
 	 * Creates a File object (i.e. nothing is created in file system) denoting a temporary file with given prefix inside "${temp
 	 * folder}/DevRock/artifact-templates/" folder.
