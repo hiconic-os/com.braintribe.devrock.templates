@@ -37,8 +37,8 @@ import freemarker.template.Version;
  */
 public class ArtifactTemplateRequestFreeMarkerProjector implements ArtifactTemplateRequestProjector {
 
-	private Version freeMarkerVersion;
-	private ModeledConfiguration modeledConfiguration;
+	private final Version freeMarkerVersion;
+	private final ModeledConfiguration modeledConfiguration;
 	
 	public ArtifactTemplateRequestFreeMarkerProjector(Version freeMarkerVersion, ModeledConfiguration modeledConfiguration) {
 		this.freeMarkerVersion = freeMarkerVersion;
@@ -52,25 +52,28 @@ public class ArtifactTemplateRequestFreeMarkerProjector implements ArtifactTempl
 		Configuration freeMarkerConfig = new Configuration(freeMarkerVersion);
 
 		for (Property property : request.entityType().getProperties()) {
-			if (property.getType().compareTo(SimpleType.TYPE_STRING) == 0 && property.get(request) != null) {
-				try {
-					property.set(request, processStringWithFreeMarker(freeMarkerConfig, property.get(request), dataModel));
-				} catch (Exception e) {
-					throw Exceptions.unchecked(e, "Failed while processing '" + property.get(request) + "' with FreeMarker.");
-				}
+			if (property.getType() != SimpleType.TYPE_STRING)
+				continue;
+			
+			String value = property.get(request);
+			if (value == null)
+				continue;
+
+			try {
+				property.set(request, resolveTemplate(freeMarkerConfig, value, dataModel));
+			} catch (Exception e) {
+				throw Exceptions.unchecked(e, "FreeMarker failed while processing " + request.entityType().getShortName() + "." + property.getName()
+						+ "'s value '" + value + "'.");
 			}
 		}
 	}
 
-	private String processStringWithFreeMarker(Configuration freeMarkerConfig, String templatedString,
-			Map<String, Object> dataModel) throws Exception {
-		String result = null;
+	private String resolveTemplate(Configuration freeMarkerConfig, String templatedString, Map<String, Object> dataModel) throws Exception {
 		try (StringReader in = new StringReader(templatedString); Writer out = new StringWriter()) {
 			Template template = new Template("", in, freeMarkerConfig);
 			template.process(dataModel, out);
-			result = out.toString();
+			return out.toString();
 		}
-		return result;
 	}
 	
 }

@@ -16,9 +16,8 @@ import com.braintribe.model.artifact.essential.PartIdentification;
 public interface ArtifactTemplateConsts {
 	
 	final String DOT_FTL = ".ftl";
-	final String GROOVY_EXTENSION = "groovy";
 	
-	final String DEPENDENCIES_SCRIPT = "dependencies." + GROOVY_EXTENSION;
+	final String DEPENDENCIES_SCRIPT = "dependencies.groovy";
 	
 	final String CONTENT_DIR = "content";
 	

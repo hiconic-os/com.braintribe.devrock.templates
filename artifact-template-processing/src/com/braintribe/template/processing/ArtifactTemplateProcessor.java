@@ -22,6 +22,7 @@ import static com.braintribe.template.processing.helper.FileHelper.deleteDir;
 import static com.braintribe.template.processing.helper.FileHelper.ensureDirExists;
 import static com.braintribe.template.processing.helper.FileHelper.unzipToTempDir;
 import static com.braintribe.utils.lcd.CollectionTools2.asMap;
+import static java.util.Objects.requireNonNullElse;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +36,7 @@ import java.util.UUID;
 
 import com.braintribe.cfg.Configurable;
 import com.braintribe.cfg.Required;
+import com.braintribe.console.ConsoleOutputs;
 import com.braintribe.devrock.env.api.DevEnvironment;
 import com.braintribe.devrock.mc.api.repository.configuration.RepositoryConfigurationLocaterBuilder;
 import com.braintribe.devrock.mc.api.repository.configuration.RepositoryConfigurationLocator;
@@ -183,7 +185,7 @@ public class ArtifactTemplateProcessor
 
 		private final boolean verboseOutput;
 
-		private final Path projectionPath;
+		private final Path mainTempPath;
 		private final Path installationPath;
 
 		private final GroovyEngine groovyEngine = new GroovyEngine();
@@ -197,7 +199,7 @@ public class ArtifactTemplateProcessor
 			this.dependencyResolver = adrContract.dependencyResolver();
 			this.partResolver = adrContract.artifactResolver();
 
-			this.projectionPath = createTempDir("template-projection-" + UUID.randomUUID()).toPath();
+			this.mainTempPath = createTempDir("template-projection-" + UUID.randomUUID()).toPath();
 			this.installationPath = Paths.get(request.getInstallationPath());
 		}
 
@@ -206,10 +208,10 @@ public class ArtifactTemplateProcessor
 			if (verboseOutput)
 				println("Projecting artifact template to the installation directory: " + installationPath);
 
-			processTemplateRequest();
+			projectTemplate();
 
 			println("Installing:");
-			outputProjectionDirectoryTree(projectionPath);
+			outputProjectionDirectoryTree(mainTempPath);
 
 			if (!request.getOverwrite()) {
 				AlreadyExists error = deleteProjectionIfInstallationExists();
@@ -217,56 +219,61 @@ public class ArtifactTemplateProcessor
 					return error.asMaybe();
 			}
 
-			copyDir(projectionPath, installationPath);
-			deleteDir(projectionPath);
+			copyDir(mainTempPath, installationPath);
+			deleteDir(mainTempPath);
 
 			return Maybe.complete(ArtifactTemplateResponse.T.create());
 		}
 
-		private void processTemplateRequest() {
+		private void projectTemplate() {
 			try {
-				tryProcessTemplateRequest(request);
+				projectTemplate(request);
 			} catch (RuntimeException e) {
 				throw Exceptions.unchecked(e, "Failed to project the requested artifact template");
 			}
 		}
 
-		private void tryProcessTemplateRequest(ArtifactTemplateRequest request) {
+		private void projectTemplate(ArtifactTemplateRequest request) {
 			if (verboseOutput)
 				println("Projecting '" + request.entityType().getTypeSignature() + "' property values");
-
 			requestProjector.project(request);
-
-			Path templateProjectionPath = projectionPath.resolve(request.getDirectoryName() != null ? request.getDirectoryName() : "");
-			ensureDirExists(templateProjectionPath);
 
 			if (verboseOutput) {
 				println("Resolving artifact template:");
 				println(templateNameOutput(request.template(), 1));
 			}
+
 			// resolve template zip, ignore dependencies
 			ArchiveZip archiveZip = resolveTemplate(request);
 			if (verboseOutput) {
 				println("Found:");
 				outTemplateResolvingResult(archiveZip.artifact);
-			}
 
-			if (verboseOutput) {
 				println("Unzipping artifact template:");
 				println(templateNameOutput(archiveZip.artifact, 1));
 			}
 
 			Path templatePath = unzipToTempDir(archiveZip.data.getResource(), "template-" + UUID.randomUUID());
 
+			// NOTE delegating only template delegates by evaluating other requests in its dependencies.groovy
 			List<ArtifactTemplateRequest> templateDependencies = getTemplateDependencies(templatePath, request);
-			for (ArtifactTemplateRequest td : templateDependencies) {
-				tryProcessTemplateRequest(td);
+			if (request.delegatingOnly()) {
+				if (!templateDependencies.isEmpty())
+					println(ConsoleOutputs.yellow("WARNING: Ignoring dependencies of " + request.entityType().getShortName() + " with template "
+							+ request.template() + " because it is marked as delegating only."));
+
+			} else {
+				for (ArtifactTemplateRequest td : templateDependencies)
+					projectTemplate(td);
+
+				println("Projecting artifact template:");
+				println(templateNameOutput(archiveZip.artifact, 1));
+
+				Path templateTempPath = mainTempPath.resolve(requireNonNullElse(request.getDirectoryName(), ""));
+				ensureDirExists(templateTempPath);
+				templateProjector.project(request, templatePath, templateTempPath);
 			}
 
-			println("Projecting artifact template:");
-			println(templateNameOutput(archiveZip.artifact, 1));
-
-			templateProjector.project(request, templatePath, templateProjectionPath);
 			deleteDir(templatePath);
 		}
 
@@ -296,12 +303,12 @@ public class ArtifactTemplateProcessor
 		}
 
 		private List<ArtifactTemplateRequest> getTemplateDependencies(Path templatePath, ArtifactTemplateRequest request) {
-			Path dependenciesScriptPath = templatePath.resolve(DEPENDENCIES_SCRIPT);
-			if (!dependenciesScriptPath.toFile().exists())
+			Path depsScriptPath = templatePath.resolve(DEPENDENCIES_SCRIPT);
+			if (!depsScriptPath.toFile().exists())
 				return Collections.emptyList();
 
 			GroovyScript dependenciesScript = GroovyScript.T.create();
-			Resource scriptResource = Resource.createTransient(() -> new FileInputStream(dependenciesScriptPath.toFile()));
+			Resource scriptResource = Resource.createTransient(() -> new FileInputStream(depsScriptPath.toFile()));
 			dependenciesScript.setSource(scriptResource);
 			Map<String, Object> dataModel = asMap( //
 					"request", request, //
@@ -318,11 +325,11 @@ public class ArtifactTemplateProcessor
 		}
 
 		private AlreadyExists deleteProjectionIfInstallationExists() {
-			List<Path> overwrittenFilePaths = collectOverwritenRelativePaths(projectionPath, installationPath);
+			List<Path> overwrittenFilePaths = collectOverwritenRelativePaths(mainTempPath, installationPath);
 			if (overwrittenFilePaths.isEmpty())
 				return null;
 
-			deleteDir(projectionPath);
+			deleteDir(mainTempPath);
 			return AlreadyExists.create("Failed to install the template projection as the following files would be overwritten: "
 					+ overwrittenFilePaths + ". To enable overwritting, set request 'overwrite' flag to true.");
 		}

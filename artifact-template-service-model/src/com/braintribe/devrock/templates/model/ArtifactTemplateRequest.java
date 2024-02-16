@@ -52,6 +52,15 @@ public interface ArtifactTemplateRequest extends ServiceRequest {
 		return null;
 	}
 
+	/**
+	 * If {@code true}, no directory will be projected for this template. Instead, the template is expected to evaluate other templates in its
+	 * dependencies.groovy, which is also expected to return an empty list of dependencies (not that dependencies would be projected into the same
+	 * directory).
+	 */
+	default boolean delegatingOnly() {
+		return false;
+	}
+	
 	@Override
 	EvalContext<? extends ArtifactTemplateResponse> eval(Evaluator<ServiceRequest> evaluator);
 
