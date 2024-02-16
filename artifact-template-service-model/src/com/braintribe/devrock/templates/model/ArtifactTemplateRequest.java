@@ -40,10 +40,14 @@ public interface ArtifactTemplateRequest extends ServiceRequest {
 	String getDirectoryName();
 	void setDirectoryName(String directoryName);
 	
-	@Description(" Specifies whether the template projection should overwrite existing files in case they exist or report an error.")
+	@Description("Specifies whether the template projection should overwrite existing files in case they exist or report an error.")
 	@Alias("o")
 	boolean getOverwrite();
 	void setOverwrite(boolean overwrite);
+
+	@Description("Fully qualified artifact id of the template. Typically null, as each request has its default, but this can override that default.")
+	String getTemplate();
+	void setTemplate(String template);
 
 	/**
 	 * Provides the fully-qualified name of the artifact template associated with the request.

@@ -236,15 +236,18 @@ public class ArtifactTemplateProcessor
 		private void projectTemplate(ArtifactTemplateRequest request) {
 			if (verboseOutput)
 				println("Projecting '" + request.entityType().getTypeSignature() + "' property values");
+
 			requestProjector.project(request);
+
+			String templateIdentification = requireNonNullElse(request.getTemplate(), request.template());
 
 			if (verboseOutput) {
 				println("Resolving artifact template:");
-				println(templateNameOutput(request.template(), 1));
+				println(templateNameOutput(templateIdentification, 1));
 			}
 
 			// resolve template zip, ignore dependencies
-			ArchiveZip archiveZip = resolveTemplate(request);
+			ArchiveZip archiveZip = resolveTemplate(request, templateIdentification);
 			if (verboseOutput) {
 				println("Found:");
 				outTemplateResolvingResult(archiveZip.artifact);
@@ -260,7 +263,7 @@ public class ArtifactTemplateProcessor
 			if (request.delegatingOnly()) {
 				if (!templateDependencies.isEmpty())
 					println(ConsoleOutputs.yellow("WARNING: Ignoring dependencies of " + request.entityType().getShortName() + " with template "
-							+ request.template() + " because it is marked as delegating only."));
+							+ templateIdentification + " because it is marked as delegating only."));
 
 			} else {
 				for (ArtifactTemplateRequest td : templateDependencies)
@@ -277,15 +280,13 @@ public class ArtifactTemplateProcessor
 			deleteDir(templatePath);
 		}
 
-		private ArchiveZip resolveTemplate(ArtifactTemplateRequest request) {
-			String template = request.template();
-
-			CompiledDependencyIdentification cdi = CompiledDependencyIdentification.parseAndRangify(template);
+		private ArchiveZip resolveTemplate(ArtifactTemplateRequest request, String templateIdentification) {
+			CompiledDependencyIdentification cdi = CompiledDependencyIdentification.parseAndRangify(templateIdentification);
 
 			Maybe<CompiledArtifactIdentification> maybeArtifact = dependencyResolver.resolveDependency(cdi);
 			if (maybeArtifact.isUnsatisfied())
-				throw new IllegalStateException("Unable to resolve template " + template + " of " + request.entityType().getShortName() + ". Reason: "
-						+ maybeArtifact.whyUnsatisfied().stringify());
+				throw new IllegalStateException("Unable to resolve template " + templateIdentification + " of " + request.entityType().getShortName()
+						+ ". Reason: " + maybeArtifact.whyUnsatisfied().stringify());
 
 			CompiledArtifactIdentification artifact = maybeArtifact.get();
 			ArtifactDataResolution data = requireArchiveZip(artifact);
