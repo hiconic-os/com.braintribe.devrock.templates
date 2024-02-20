@@ -314,7 +314,7 @@ public class ArtifactTemplateProcessor
 			Map<String, Object> dataModel = asMap( //
 					"request", request, //
 					"requestContext", requestContext, //
-					"support", new TemplateSupport(modeledConfiguration) //
+					"support", new TemplateSupport(request, modeledConfiguration) //
 			);
 
 			try {

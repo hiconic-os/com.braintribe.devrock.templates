@@ -47,7 +47,7 @@ public class ArtifactTemplateRequestFreeMarkerProjector implements ArtifactTempl
 
 	@Override
 	public void project(ArtifactTemplateRequest request) {
-		Map<String, Object> dataModel = asMap("request", request, "support", new TemplateSupport(modeledConfiguration));
+		Map<String, Object> dataModel = asMap("request", request, "support", new TemplateSupport(request, modeledConfiguration));
 
 		Configuration freeMarkerConfig = new Configuration(freeMarkerVersion);
 

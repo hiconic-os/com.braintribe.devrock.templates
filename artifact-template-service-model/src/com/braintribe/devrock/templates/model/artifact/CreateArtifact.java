@@ -49,7 +49,7 @@ public interface CreateArtifact extends ArtifactTemplateRequest {
 
 	@Description("The version of the projected artifact. If no version is specified, we try to inference the version from the parent artifact, and if that fails, default '1.0' is used.")
 	@Alias("v")
-	@Initializer("'${support.getDefaultArtifactVersion(request.installationPath, request.buildSystem)}'")
+	@Initializer("'${support.getDefaultArtifactVersion(request.buildSystem)}'")
 	String getVersion();
 	void setVersion(String version);
 

@@ -57,7 +57,7 @@ import freemarker.template.Version;
 public class ArtifactTemplateFreeMarkerProjector implements ArtifactTemplateProjector, ArtifactTemplateConsts {
 
 	private final Version freeMarkerVersion;
-	private ModeledConfiguration modelConfiguration;
+	private final ModeledConfiguration modelConfiguration;
 
 	public ArtifactTemplateFreeMarkerProjector(Version freeMarkerVersion,  ModeledConfiguration modelConfiguration) {
 		this.freeMarkerVersion = freeMarkerVersion;
@@ -94,7 +94,7 @@ public class ArtifactTemplateFreeMarkerProjector implements ArtifactTemplateProj
 			return;
 		}
 
-		Map<String, Object> dataModel = asMap("request", request, "support", new TemplateSupport(modelConfiguration));
+		Map<String, Object> dataModel = asMap("request", request, "support", new TemplateSupport(request, modelConfiguration));
 
 		Configuration freeMarkerConfig = new Configuration(freeMarkerVersion);
 		freeMarkerConfig.setDirectoryForTemplateLoading(dynamicDir.toFile());
