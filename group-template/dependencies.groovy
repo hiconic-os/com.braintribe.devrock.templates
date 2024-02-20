@@ -5,6 +5,8 @@ import com.braintribe.devrock.templates.model.artifact.CreateSourceControlConfig
 def parentRequest = CreateParent.T.create();
 support.mapFromTo(request, parentRequest);
 parentRequest.directoryName = 'parent';
+if ('dr'.equals(request.buildSystem))
+    parentRequest.buildSystem = 'bt-ant'
 
 def groupBuildScriptRequest = CreateGroupBuildScript.T.create();
 support.mapFromTo(request, groupBuildScriptRequest);
