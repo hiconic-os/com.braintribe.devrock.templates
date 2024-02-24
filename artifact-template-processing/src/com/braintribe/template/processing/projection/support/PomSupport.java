@@ -56,7 +56,7 @@ import com.braintribe.utils.template.Template;
 		return Template.merge(da.getVersion(), (Map<String, Object>) (Object) da.getProperties());
 	}
 
-	public void ensuerDependencyVersions(String... dependencies) {
+	public void ensureDependencyVersions(String... dependencies) {
 		if (dependencies == null || dependencies.length == 0)
 			return;
 

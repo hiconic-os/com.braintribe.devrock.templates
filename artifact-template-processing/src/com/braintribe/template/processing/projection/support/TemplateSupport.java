@@ -147,8 +147,8 @@ public class TemplateSupport {
 		}
 	}
 
-	public void ensuerDependencyVersions(String... dependencies) {
-		pomSupport.ensuerDependencyVersions(dependencies);
+	public void ensureDependencyVersions(String... dependencies) {
+		pomSupport.ensureDependencyVersions(dependencies);
 	}
 
 	public List<Dependency> distinctDependencies(List<Dependency> dependencies) {
