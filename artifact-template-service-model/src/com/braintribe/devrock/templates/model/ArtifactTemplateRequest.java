@@ -15,6 +15,7 @@ import com.braintribe.model.generic.annotation.Abstract;
 import com.braintribe.model.generic.annotation.Initializer;
 import com.braintribe.model.generic.annotation.meta.Alias;
 import com.braintribe.model.generic.annotation.meta.Description;
+import com.braintribe.model.generic.annotation.meta.FolderName;
 import com.braintribe.model.generic.annotation.meta.PositionalArguments;
 import com.braintribe.model.generic.eval.EvalContext;
 import com.braintribe.model.generic.eval.Evaluator;
@@ -32,6 +33,7 @@ public interface ArtifactTemplateRequest extends ServiceRequest {
 	@Description("The installation path of the artifact template projection.")
 	@Alias("ip")
 	@Initializer("'.'")
+	@FolderName
 	String getInstallationPath();
 	void setInstallationPath(String installationPath);
 	
