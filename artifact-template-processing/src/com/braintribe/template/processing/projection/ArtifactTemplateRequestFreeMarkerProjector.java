@@ -35,7 +35,7 @@ import com.braintribe.devrock.templates.model.ArtifactTemplateRequest;
 import com.braintribe.exception.Exceptions;
 import com.braintribe.gm.config.api.ModeledConfiguration;
 import com.braintribe.model.generic.reflection.Property;
-import com.braintribe.model.generic.reflection.SimpleType;
+import com.braintribe.model.generic.reflection.SimpleTypes;
 import com.braintribe.template.processing.api.ArtifactTemplateRequestProjector;
 import com.braintribe.template.processing.projection.support.TemplateSupport;
 
@@ -65,7 +65,7 @@ public class ArtifactTemplateRequestFreeMarkerProjector implements ArtifactTempl
 		Configuration freeMarkerConfig = new Configuration(freeMarkerVersion);
 
 		for (Property property : request.entityType().getProperties()) {
-			if (property.getType() != SimpleType.TYPE_STRING)
+			if (property.getType() != SimpleTypes.TYPE_STRING)
 				continue;
 			
 			String value = property.get(request);
